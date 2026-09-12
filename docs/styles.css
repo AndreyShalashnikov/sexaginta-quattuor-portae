@@ -1,0 +1,28 @@
+:root { --ink:#1c1612; --mute:#6a5f54; --paper:#f4efe6; --line:#4a3728; --accent:#6b3f24; }
+* { box-sizing: border-box; }
+html, body { margin: 0; background: #e7e0d4; color: var(--ink); font-family: "Segoe UI", system-ui, sans-serif; }
+.page { max-width: 980px; margin: 24px auto; background: var(--paper); padding: 28px 32px 40px; }
+h1 { margin: 0 0 8px; font-family: Georgia, "Times New Roman", serif; font-weight: 600; font-size: 30px; }
+.greet { font-family: Georgia, serif; font-size: 17px; line-height: 1.55; color: #3a322b; margin: 0 0 10px; }
+.cite { font-size: 12px; color: var(--mute); margin: 0 0 22px; }
+form { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; margin-bottom: 10px; }
+label { font-size: 13px; color: var(--mute); display: flex; flex-direction: column; gap: 6px; }
+label.wide { grid-column: 1 / -1; }
+input { font: inherit; padding: 8px 10px; border: 1px solid #cbbba8; background: #fff; }
+button { grid-column: 1 / -1; background: var(--accent); color: #fff; border: 0; padding: 12px 16px; font-size: 16px; cursor: pointer; }
+button:disabled { opacity: 0.6; cursor: wait; }
+#status { min-height: 1.3em; color: #8a2b2b; margin: 8px 0; }
+#geo { background: #fff; border: 1px solid #cbbba8; padding: 10px 12px; font-size: 14px; margin: 0 0 16px; }
+.pills { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; }
+.pill { border: 1px solid #cbbba8; padding: 4px 10px; font-size: 13px; background: #fff; }
+.wrap { display: grid; grid-template-columns: 1fr 280px; gap: 20px; align-items: start; }
+aside h2 { font-size: 12px; letter-spacing: .04em; text-transform: uppercase; color: var(--mute); margin: 14px 0 6px; }
+aside h2:first-child { margin-top: 0; }
+aside p, aside ul { margin: 0; line-height: 1.5; font-size: 14px; }
+.legend { font-size: 12px; color: var(--mute); margin-top: 12px; }
+.sw { display: inline-block; width: 11px; height: 11px; border: 1px solid var(--line); vertical-align: -1px; margin: 0 4px 0 10px; }
+.meta { font-size: 12px; color: var(--mute); }
+@media (max-width: 800px) {
+  form, .wrap { grid-template-columns: 1fr; }
+  .page { margin: 0; }
+}
