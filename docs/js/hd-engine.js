@@ -23,12 +23,18 @@ const PLANETS = [
 
 const MOTORS = new Set(["Sacral", "Heart", "Solar Plexus", "Root"]);
 
+function dataFile(name) {
+  return new URL(`../data/${name}`, import.meta.url);
+}
+
 export async function loadHdTables() {
-  const [mandala, centers, channels] = await Promise.all([
-    fetch("../data/rave-mandala.json").then((r) => r.json()),
-    fetch("../data/centers.json").then((r) => r.json()),
-    fetch("../data/channels.json").then((r) => r.json()),
-  ]);
+  const [mandala, centers, channels] = await Promise.all(
+    ["rave-mandala.json", "centers.json", "channels.json"].map(async (name) => {
+      const res = await fetch(dataFile(name));
+      if (!res.ok) throw new Error(`Не удалось загрузить ${name}`);
+      return res.json();
+    }),
+  );
   return { mandala, centers, channels: channels.channels };
 }
 
