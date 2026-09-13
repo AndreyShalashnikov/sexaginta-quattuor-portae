@@ -23,18 +23,34 @@ const PLANETS = [
 
 const MOTORS = new Set(["Sacral", "Heart", "Solar Plexus", "Root"]);
 
-function dataFile(name) {
-  return new URL(`../data/${name}`, import.meta.url);
+async function fetchJson(name) {
+  const urls = [
+    new URL(`../data/${name}`, import.meta.url).href,
+    new URL(`./data/${name}`, document.baseURI).href,
+  ];
+  let last = name;
+  for (const url of urls) {
+    try {
+      const res = await fetch(url, { cache: "no-store" });
+      const text = await res.text();
+      if (!res.ok || text.trimStart().startsWith("<")) {
+        last = `${name} (${res.status})`;
+        continue;
+      }
+      return JSON.parse(text);
+    } catch (err) {
+      last = err.message || name;
+    }
+  }
+  throw new Error(`Не удалось загрузить ${last}`);
 }
 
 export async function loadHdTables() {
-  const [mandala, centers, channels] = await Promise.all(
-    ["rave-mandala.json", "centers.json", "channels.json"].map(async (name) => {
-      const res = await fetch(dataFile(name));
-      if (!res.ok) throw new Error(`Не удалось загрузить ${name}`);
-      return res.json();
-    }),
-  );
+  const [mandala, centers, channels] = await Promise.all([
+    fetchJson("rave-mandala.json"),
+    fetchJson("centers.json"),
+    fetchJson("channels.json"),
+  ]);
   return { mandala, centers, channels: channels.channels };
 }
 
@@ -45,9 +61,17 @@ export function degreeToGateLine(degree, mandala) {
   if (adjusted < 0) adjusted += 360;
   let index = Math.floor(adjusted / gateSize);
   if (index >= 64) index = 63;
-  let line = Math.floor((adjusted % gateSize) / lineSize) + 1;
+  const inGate = adjusted % gateSize;
+  let line = Math.floor(inGate / lineSize) + 1;
   if (line > 6) line = 6;
-  return { gate: mandala.gateSequence[index], line, degree };
+  const inLine = inGate % lineSize;
+  const colorSize = lineSize / 6;
+  const toneSize = colorSize / 6;
+  let color = Math.floor(inLine / colorSize) + 1;
+  if (color > 6) color = 6;
+  let tone = Math.floor((inLine % colorSize) / toneSize) + 1;
+  if (tone > 6) tone = 6;
+  return { gate: mandala.gateSequence[index], line, color, tone, degree };
 }
 
 function geoEclipticLon(body, date) {
@@ -232,6 +256,43 @@ function gateTones(personality, design) {
     tones[String(g)] = p.has(g) && d.has(g) ? "both" : p.has(g) ? "p" : "d";
   }
   return tones;
+}
+
+function channelKeyPair(g1, g2) {
+  return g1 < g2 ? `${g1}-${g2}` : `${g2}-${g1}`;
+}
+
+export function currentSky(mandala, when = new Date()) {
+  return planetSet(when, mandala);
+}
+
+export function withTransit(natal, tables, sky) {
+  const skyGates = Object.values(sky).map((x) => x.gate);
+  const allGates = [...new Set([...natal.allGates, ...skyGates])].sort((a, b) => a - b);
+  const active = definedChannels(allGates, tables.channels);
+  const natalKeys = new Set(
+    natal.channels.map((ch) => channelKeyPair(ch.gates[0], ch.gates[1])),
+  );
+  const overlayKeys = active.map((ch) => channelKeyPair(ch.gates[0], ch.gates[1]));
+  const transitOnlyKeys = overlayKeys.filter((k) => !natalKeys.has(k));
+  const defined = definedCentersFromChannels(active);
+  const tones = { ...natal.gateTones };
+  for (const g of skyGates) {
+    if (!tones[String(g)]) tones[String(g)] = "t";
+  }
+  return {
+    ...natal,
+    channels: active,
+    definedCenters: [...defined],
+    openCenters: Object.keys(tables.centers).filter((c) => !defined.has(c)),
+    hanging: hangingGates(allGates, active),
+    allGates,
+    gateTones: tones,
+    natalChannelKeys: [...natalKeys],
+    transitOnlyKeys,
+    sky,
+    overlay: true,
+  };
 }
 
 export function calculateChart(birthUtcDate, tables) {
